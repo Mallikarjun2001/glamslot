@@ -1265,11 +1265,9 @@
         return;
       }
 
-      // Unique deterministic lock key so Supabase database enforces single booking per slot
-      const slotLockId = `SLOT-${currentSalon.id}-${bookingDate}-${selectedSlot.replace(/[^a-zA-Z0-9]/g, '')}`;
-
+      // Generate a unique booking ID (keeps full audit trail even when re-booked)
       const bookingRecord = {
-        id: slotLockId,
+        id: "BK-" + Math.floor(100000 + Math.random() * 900000),
         salon_id: currentSalon.id,
         salon_name: currentSalon.name,
         salon_address: currentSalon.address,
@@ -1286,8 +1284,7 @@
       try {
         if (!supabaseClient) throw new Error("Supabase client not loaded");
 
-        // Single atomic insert into database: if another user books at the exact same millisecond,
-        // PostgreSQL unique primary key constraint blocks the second user instantly!
+        // Insert booking with status CONFIRMED
         const { error } = await supabaseClient
           .from('bookings')
           .insert([bookingRecord]);
@@ -1364,31 +1361,30 @@
 
       try {
         if (supabaseClient) {
-          // Delete from cloud so slot becomes immediately free for everyone
+          // Never delete data: update the status column to 'CANCELLED' in Supabase
           const { error } = await supabaseClient
             .from('bookings')
-            .delete()
+            .update({ status: 'CANCELLED' })
             .eq('id', bookingId);
 
           if (error) {
-            console.error("Cloud cancellation failed, updating status:", error);
-            // Fallback: update status to CANCELLED
-            await supabaseClient
-              .from('bookings')
-              .update({ status: 'CANCELLED' })
-              .eq('id', bookingId);
+            console.error("Cloud cancellation failed:", error);
+            throw error;
           }
         }
       } catch (e) {
-        console.error("Failed to delete from Supabase", e);
+        console.error("Failed to cancel in Supabase", e);
+        showToast("Error updating cancellation status: " + e.message, "error");
+        return;
       }
 
+      // Update local view
       let bookings = getMyLocalBookings();
-      bookings = bookings.filter(b => b.id !== bookingId);
+      bookings = bookings.map(b => b.id === bookingId ? { ...b, status: 'CANCELLED' } : b);
       localStorage.setItem("my_glamslot_bookings", JSON.stringify(bookings));
       updateBookingsBadge();
       renderMyBookings();
-      showToast("Booking cancelled. Slot is now available again!", "info");
+      showToast("Booking marked as CANCELLED. Slot is now free for other customers!", "info");
     }
 
     function renderMyBookings() {
@@ -1416,8 +1412,8 @@
         card.innerHTML = `
           <div class="space-y-1.5">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                <i class="fa-solid fa-circle-check"></i> ${b.status}
+              <span class="text-xs font-bold ${b.status === 'CANCELLED' ? 'text-red-700 bg-red-50 border border-red-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'} px-2 py-0.5 rounded-md">
+                <i class="fa-solid ${b.status === 'CANCELLED' ? 'fa-ban' : 'fa-circle-check'}"></i> ${b.status}
               </span>
               <span class="text-xs text-slate-400 font-mono">ID: ${b.id}</span>
             </div>
@@ -1440,9 +1436,13 @@
               <span class="text-xs text-slate-400 block">Pay at Parlour</span>
               <span class="text-lg font-extrabold text-slate-900">₹${b.total_amount || b.totalAmount}</span>
             </div>
-            <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-600 hover:text-red-700 font-bold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition">
-              Cancel Slot
-            </button>
+            ${b.status !== 'CANCELLED' ? `
+              <button onclick="cancelBooking('${b.id}')" class="text-xs text-red-600 hover:text-red-700 font-bold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition">
+                Cancel Slot
+              </button>
+            ` : `
+              <span class="text-xs font-semibold text-slate-400 italic">Slot Released</span>
+            `}
           </div>
         `;
         container.appendChild(card);
