@@ -21,15 +21,19 @@
         <span class="text-xl font-bold bg-gradient-to-r from-rose-600 to-indigo-600 bg-clip-text text-transparent">GlamSlot</span>
       </div>
 
-      <nav class="flex items-center gap-4 text-sm font-medium">
-        <button onclick="showView('salons')" id="nav-explore" class="text-rose-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition">Explore Salons</button>
-        <button onclick="showView('my-bookings')" id="nav-bookings" class="text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-2">
+      <nav class="flex items-center gap-3 md:gap-4 text-sm font-medium">
+        <button onclick="showView('salons')" id="nav-explore" class="text-rose-600 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition">Explore</button>
+        <button onclick="showView('my-bookings')" id="nav-bookings" class="text-slate-600 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5">
           <span>My Bookings</span>
           <span id="booking-badge" class="hidden bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
         </button>
-        <button onclick="showView('admin')" id="nav-admin" class="text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5 font-semibold">
-          <i class="fa-solid fa-lock text-xs text-indigo-500"></i>
-          <span>Admin Portal</span>
+        <button onclick="showView('partner')" id="nav-partner" class="text-slate-600 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 text-xs md:text-sm font-semibold border border-slate-200">
+          <i class="fa-solid fa-store text-rose-500"></i>
+          <span>Partner with Us</span>
+        </button>
+        <button onclick="showView('admin')" id="nav-admin" class="text-slate-600 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 text-xs md:text-sm font-semibold">
+          <i class="fa-solid fa-shield-halved text-indigo-500"></i>
+          <span>Admin</span>
         </button>
       </nav>
     </div>
@@ -194,15 +198,26 @@
     <section id="view-admin" class="hidden space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">Admin Portal — All Bookings</h1>
-          <p class="text-sm text-slate-500">Live feed of every appointment booked across all devices</p>
+          <h1 class="text-2xl font-bold text-slate-900">Admin Portal</h1>
+          <p class="text-sm text-slate-500">Manage bookings and review new parlour applications</p>
         </div>
-        <button onclick="renderAdminView()" class="text-xs bg-slate-900 text-white font-bold px-3 py-2 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-rotate-right"></i> Refresh
-        </button>
+        <div class="flex items-center gap-2">
+          <div class="bg-slate-100 p-1 rounded-xl flex text-xs font-bold">
+            <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings" class="px-3 py-1.5 rounded-lg bg-white shadow-sm text-slate-800">
+              Bookings (<span id="admin-booking-count">0</span>)
+            </button>
+            <button onclick="switchAdminTab('partners')" id="tab-btn-partners" class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900">
+              Pending Salons (<span id="admin-pending-count" class="text-rose-600 font-bold">0</span>)
+            </button>
+          </div>
+          <button onclick="renderAdminView()" class="text-xs bg-slate-900 text-white font-bold px-3 py-2 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <!-- Admin Tab 1: Bookings Table -->
+      <div id="admin-tab-bookings" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
@@ -220,6 +235,104 @@
           </table>
         </div>
       </div>
+
+      <!-- Admin Tab 2: Pending Partner Salons -->
+      <div id="admin-tab-partners" class="hidden space-y-4">
+        <div id="admin-partners-list" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: PARTNER ONBOARDING FORM -->
+    <section id="view-partner" class="hidden space-y-6 max-w-3xl mx-auto">
+      <div class="bg-gradient-to-r from-rose-500 to-indigo-600 rounded-2xl p-6 md:p-8 text-white shadow-lg">
+        <span class="text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-md">Partner with GlamSlot</span>
+        <h1 class="text-2xl md:text-3xl font-extrabold mt-2">List Your Unisex Parlour</h1>
+        <p class="text-rose-100 text-sm mt-1">Get more customers, eliminate queue walk-outs, and receive direct slot bookings 24/7.</p>
+      </div>
+
+      <form id="partner-form" onsubmit="submitPartnerRegistration(event)" class="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-6">
+        
+        <!-- Step 1: Basic Info -->
+        <div class="space-y-4">
+          <h2 class="text-base font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">1</span>
+            <span>Salon Details</span>
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Salon Name *</label>
+              <input type="text" id="p-name" required placeholder="e.g. Naturals Unisex Hair Spa" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-rose-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Contact Phone *</label>
+              <input type="tel" id="p-phone" required placeholder="10-digit mobile number" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-rose-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Location / Area *</label>
+              <input type="text" id="p-city" required placeholder="e.g. Koramangala, Bengaluru" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-rose-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Full Street Address *</label>
+              <input type="text" id="p-address" required placeholder="e.g. #42, 5th Cross, 6th Block" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-rose-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">About Your Salon</label>
+            <textarea id="p-about" rows="2" placeholder="Brief description of specializations, atmosphere, hygiene..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-rose-500"></textarea>
+          </div>
+        </div>
+
+        <!-- Step 2: Stylists / Staff -->
+        <div class="space-y-3">
+          <h2 class="text-base font-bold text-slate-900 border-b pb-2 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">2</span>
+              <span>Stylists & Staff</span>
+            </span>
+            <button type="button" onclick="addPartnerStylistField()" class="text-xs text-rose-600 font-bold hover:underline">+ Add Stylist</button>
+          </h2>
+          <div id="partner-stylists-list" class="space-y-2">
+            <input type="text" placeholder="e.g. Ramesh (Senior Stylist)" class="p-stylist-input w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" value="Any Available Stylist">
+          </div>
+        </div>
+
+        <!-- Step 3: Services Menu -->
+        <div class="space-y-3">
+          <h2 class="text-base font-bold text-slate-900 border-b pb-2 flex items-center justify-between">
+            <span class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">3</span>
+              <span>Services Offered</span>
+            </span>
+            <button type="button" onclick="addPartnerServiceRow()" class="text-xs text-rose-600 font-bold hover:underline">+ Add Service</button>
+          </h2>
+
+          <div id="partner-services-list" class="space-y-2">
+            <!-- Row 1 Default -->
+            <div class="p-service-row grid grid-cols-12 gap-2 items-center">
+              <input type="text" placeholder="Service Name (e.g. Haircut)" value="Classic Haircut" class="p-srv-name col-span-6 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+              <input type="text" placeholder="Duration" value="30 mins" class="p-srv-dur col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+              <input type="number" placeholder="Price ₹" value="300" class="p-srv-price col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+            </div>
+            <!-- Row 2 Default -->
+            <div class="p-service-row grid grid-cols-12 gap-2 items-center">
+              <input type="text" placeholder="Service Name" value="Beard Trim & Grooming" class="p-srv-name col-span-6 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500">
+              <input type="text" placeholder="Duration" value="20 mins" class="p-srv-dur col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500">
+              <input type="number" placeholder="Price ₹" value="150" class="p-srv-price col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-partner" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Submit Salon Application</span>
+        </button>
+        <p class="text-xs text-center text-slate-400">Our admin team will review and approve your listing within 24 hours.</p>
+      </form>
     </section>
 
   </main>
@@ -344,13 +457,16 @@
       document.getElementById("view-details").classList.add("hidden");
       document.getElementById("view-my-bookings").classList.add("hidden");
       document.getElementById("view-admin").classList.add("hidden");
+      document.getElementById("view-partner").classList.add("hidden");
 
       document.getElementById("nav-explore").classList.remove("text-rose-600", "font-semibold");
       document.getElementById("nav-bookings").classList.remove("text-rose-600", "font-semibold");
       document.getElementById("nav-admin").classList.remove("text-rose-600", "font-semibold");
+      document.getElementById("nav-partner").classList.remove("text-rose-600", "font-semibold");
       document.getElementById("nav-explore").classList.add("text-slate-600");
       document.getElementById("nav-bookings").classList.add("text-slate-600");
       document.getElementById("nav-admin").classList.add("text-slate-600");
+      document.getElementById("nav-partner").classList.add("text-slate-600");
 
       if (viewName === "salons") {
         document.getElementById("view-salons").classList.remove("hidden");
@@ -365,8 +481,34 @@
         document.getElementById("view-admin").classList.remove("hidden");
         document.getElementById("nav-admin").classList.add("text-rose-600", "font-semibold");
         renderAdminView();
+      } else if (viewName === "partner") {
+        document.getElementById("view-partner").classList.remove("hidden");
+        document.getElementById("nav-partner").classList.add("text-rose-600", "font-semibold");
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- ADMIN TABS (BOOKINGS & PARTNER APPROVALS) ---
+    let currentAdminTab = "bookings";
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      const bTab = document.getElementById("admin-tab-bookings");
+      const pTab = document.getElementById("admin-tab-partners");
+      const bBtn = document.getElementById("tab-btn-bookings");
+      const pBtn = document.getElementById("tab-btn-partners");
+
+      if (tab === "bookings") {
+        bTab.classList.remove("hidden");
+        pTab.classList.add("hidden");
+        bBtn.className = "px-3 py-1.5 rounded-lg bg-white shadow-sm text-slate-800";
+        pBtn.className = "px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900";
+      } else {
+        bTab.classList.add("hidden");
+        pTab.classList.remove("hidden");
+        pBtn.className = "px-3 py-1.5 rounded-lg bg-white shadow-sm text-slate-800";
+        bBtn.className = "px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900";
+        renderPendingPartners();
+      }
     }
 
     async function renderAdminView() {
@@ -374,6 +516,12 @@
       tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Loading live cloud bookings from Supabase...</td></tr>`;
       
       const bookings = await fetchAllBookings();
+      document.getElementById("admin-booking-count").innerText = bookings ? bookings.length : 0;
+      
+      // Also update pending partner count
+      const pendingSalons = await fetchPendingSalons();
+      document.getElementById("admin-pending-count").innerText = pendingSalons ? pendingSalons.length : 0;
+
       if (!bookings || bookings.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-medium">No bookings in Supabase database yet.</td></tr>`;
         return;
@@ -420,18 +568,275 @@
           </tr>
         `;
       }).join("");
+
+      if (currentAdminTab === "partners") {
+        renderPendingPartners();
+      }
     }
 
-    // --- RENDER SALONS ---
-    function filterSalons() {
+    // --- PENDING PARTNER REVIEW IN ADMIN ---
+    async function renderPendingPartners() {
+      const container = document.getElementById("admin-partners-list");
+      container.innerHTML = `<p class="text-slate-400 text-xs py-4 text-center">Checking pending partner applications...</p>`;
+      
+      const list = await fetchPendingSalons();
+      document.getElementById("admin-pending-count").innerText = list.length;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-10 text-center border border-slate-200">
+            <i class="fa-solid fa-clipboard-check text-4xl text-emerald-300 mb-3"></i>
+            <h3 class="font-bold text-slate-800">All Caught Up!</h3>
+            <p class="text-xs text-slate-500 mt-1">No pending salon applications waiting for review.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(salon => `
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                Application Pending Approval
+              </span>
+              <h3 class="text-lg font-bold text-slate-900 mt-2">${salon.name}</h3>
+              <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                <i class="fa-solid fa-location-dot text-rose-500"></i> ${salon.address}, ${salon.city}
+              </p>
+              <p class="text-xs text-slate-500 mt-0.5">
+                <i class="fa-solid fa-phone text-indigo-500"></i> ${salon.phone}
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="approveSalon('${salon.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-check"></i> Approve & Publish
+              </button>
+              <button onclick="rejectSalon('${salon.id}')" class="text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-bold px-3 py-2 rounded-lg transition">
+                Reject
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+              <p class="font-bold text-slate-700 mb-1">Services Menu (${(salon.services || []).length})</p>
+              <div class="space-y-1 max-h-32 overflow-y-auto pr-2">
+                ${(salon.services || []).map(s => `
+                  <div class="flex justify-between bg-slate-50 p-2 rounded">
+                    <span class="font-medium text-slate-800">${s.name} (${s.duration})</span>
+                    <span class="font-bold text-slate-900">₹${s.price}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div>
+              <p class="font-bold text-slate-700 mb-1">Stylists (${(salon.stylists || []).length})</p>
+              <div class="flex flex-wrap gap-1.5">
+                ${(salon.stylists || []).map(st => `
+                  <span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md font-medium text-[11px]">${st}</span>
+                `).join('')}
+              </div>
+              <p class="font-bold text-slate-700 mt-3 mb-1">About</p>
+              <p class="text-slate-600 leading-relaxed">${salon.about || 'No description provided.'}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- PARTNER ONBOARDING FORM HELPERS ---
+    function addPartnerStylistField() {
+      const container = document.getElementById("partner-stylists-list");
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "Stylist name and specialization";
+      input.className = "p-stylist-input w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500";
+      container.appendChild(input);
+    }
+
+    function addPartnerServiceRow() {
+      const container = document.getElementById("partner-services-list");
+      const row = document.createElement("div");
+      row.className = "p-service-row grid grid-cols-12 gap-2 items-center";
+      row.innerHTML = `
+        <input type="text" placeholder="Service Name" class="p-srv-name col-span-6 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+        <input type="text" placeholder="Duration" value="30 mins" class="p-srv-dur col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+        <input type="number" placeholder="Price ₹" class="p-srv-price col-span-3 border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-rose-500" required>
+      `;
+      container.appendChild(row);
+    }
+
+    async function submitPartnerRegistration(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btn-submit-partner");
+      btn.disabled = true;
+      btn.innerText = "Submitting Application...";
+
+      const name = document.getElementById("p-name").value.trim();
+      const phone = document.getElementById("p-phone").value.trim();
+      const city = document.getElementById("p-city").value.trim();
+      const address = document.getElementById("p-address").value.trim();
+      const about = document.getElementById("p-about").value.trim();
+
+      // Collect Stylists
+      const stylistInputs = document.querySelectorAll(".p-stylist-input");
+      const stylists = Array.from(stylistInputs).map(i => i.value.trim()).filter(Boolean);
+      if (stylists.length === 0) stylists.push("Any Available Stylist");
+
+      // Collect Services
+      const serviceRows = document.querySelectorAll(".p-service-row");
+      const services = [];
+      serviceRows.forEach((r, idx) => {
+        const sName = r.querySelector(".p-srv-name").value.trim();
+        const sDur = r.querySelector(".p-srv-dur").value.trim() || "30 mins";
+        const sPrice = parseFloat(r.querySelector(".p-srv-price").value) || 200;
+        if (sName) {
+          services.push({
+            id: "ps-" + (idx + 1),
+            name: sName,
+            duration: sDur,
+            price: sPrice
+          });
+        }
+      });
+
+      const newSalon = {
+        id: "salon-" + Math.floor(1000 + Math.random() * 9000),
+        name: name,
+        city: city,
+        address: address,
+        phone: phone,
+        about: about || "Modern unisex parlour offering professional grooming services.",
+        rating: 4.8,
+        reviews_count: 0,
+        services: services,
+        stylists: stylists,
+        status: "PENDING"
+      };
+
+      try {
+        if (!supabaseClient) throw new Error("Supabase client unavailable");
+
+        const { error } = await supabaseClient
+          .from('salons')
+          .insert([newSalon]);
+
+        if (error) throw error;
+
+        showToast("Application submitted! Our admin team will approve it shortly.", "success");
+        document.getElementById("partner-form").reset();
+        
+        setTimeout(() => {
+          showView("salons");
+        }, 1500);
+
+      } catch (err) {
+        console.error("Partner submission error:", err);
+        showToast("Failed to submit: " + (err.message || "Ensure 'salons' table exists in Supabase"), "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Submit Salon Application</span>`;
+      }
+    }
+
+    // --- SUPABASE SALON HELPERS ---
+    async function fetchAllApprovedSalons() {
+      try {
+        if (!supabaseClient) return SALONS;
+        const { data, error } = await supabaseClient
+          .from('salons')
+          .select('*')
+          .eq('status', 'APPROVED');
+
+        if (!error && data && data.length > 0) {
+          // Merge Supabase approved salons with default mock salons
+          return [...SALONS, ...data.map(d => ({
+            id: d.id,
+            name: d.name,
+            city: d.city,
+            address: d.address,
+            phone: d.phone,
+            rating: d.rating || 4.8,
+            reviewsCount: d.reviews_count || 0,
+            about: d.about,
+            stylists: d.stylists || ["Any Available Stylist"],
+            services: d.services || []
+          }))];
+        }
+      } catch (e) {
+        console.warn("Using default salons", e);
+      }
+      return SALONS;
+    }
+
+    async function fetchPendingSalons() {
+      try {
+        if (!supabaseClient) return [];
+        const { data, error } = await supabaseClient
+          .from('salons')
+          .select('*')
+          .eq('status', 'PENDING');
+
+        if (error) {
+          console.warn("Could not fetch pending salons", error);
+          return [];
+        }
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    async function approveSalon(salonId) {
+      if (!confirm("Approve this salon and publish it immediately on the homepage?")) return;
+      try {
+        if (!supabaseClient) return;
+        const { error } = await supabaseClient
+          .from('salons')
+          .update({ status: 'APPROVED' })
+          .eq('id', salonId);
+
+        if (error) throw error;
+
+        showToast("Salon approved! It is now live on GlamSlot.", "success");
+        renderPendingPartners();
+        filterSalons(); // refresh homepage
+      } catch (e) {
+        showToast("Error approving salon: " + e.message, "error");
+      }
+    }
+
+    async function rejectSalon(salonId) {
+      if (!confirm("Reject and remove this application?")) return;
+      try {
+        if (!supabaseClient) return;
+        const { error } = await supabaseClient
+          .from('salons')
+          .delete()
+          .eq('id', salonId);
+
+        if (error) throw error;
+
+        showToast("Application rejected.", "info");
+        renderPendingPartners();
+      } catch (e) {
+        showToast("Error rejecting: " + e.message, "error");
+      }
+    }
+
+    // --- RENDER SALONS (DYNAMIC FROM SUPABASE) ---
+    async function filterSalons() {
       const city = document.getElementById("filter-city").value.toLowerCase();
       const service = document.getElementById("filter-service").value.toLowerCase();
       const query = document.getElementById("search-query").value.toLowerCase();
 
-      const filtered = SALONS.filter(s => {
+      const allSalons = await fetchAllApprovedSalons();
+
+      const filtered = allSalons.filter(s => {
         const matchesCity = !city || s.city.toLowerCase().includes(city);
-        const matchesQuery = !query || s.name.toLowerCase().includes(query) || s.about.toLowerCase().includes(query);
-        const matchesService = !service || s.services.some(srv => srv.name.toLowerCase().includes(service));
+        const matchesQuery = !query || s.name.toLowerCase().includes(query) || (s.about && s.about.toLowerCase().includes(query));
+        const matchesService = !service || (s.services && s.services.some(srv => srv.name.toLowerCase().includes(service)));
         return matchesCity && matchesQuery && matchesService;
       });
 
@@ -453,27 +858,29 @@
       filtered.forEach(salon => {
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between";
+        const minPrice = salon.services && salon.services.length > 0 ? Math.min(...salon.services.map(s => s.price)) : 199;
+
         card.innerHTML = `
           <div class="p-5">
             <div class="flex items-start justify-between gap-2">
               <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded">Unisex Parlour</span>
               <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-                <i class="fa-solid fa-star text-amber-500 text-[10px]"></i> ${salon.rating} (${salon.reviewsCount})
+                <i class="fa-solid fa-star text-amber-500 text-[10px]"></i> ${salon.rating || 4.8} (${salon.reviewsCount || 0})
               </span>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mt-2.5">${salon.name}</h3>
             <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
               <i class="fa-solid fa-location-dot text-rose-500"></i> ${salon.city}
             </p>
-            <p class="text-xs text-slate-600 mt-3 line-clamp-2 leading-relaxed">${salon.about}</p>
+            <p class="text-xs text-slate-600 mt-3 line-clamp-2 leading-relaxed">${salon.about || ''}</p>
             
             <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
-              ${salon.services.slice(0, 3).map(s => `<span class="text-[11px] bg-slate-100 text-slate-700 px-2 py-1 rounded-md font-medium">${s.name} • ₹${s.price}</span>`).join('')}
-              ${salon.services.length > 3 ? `<span class="text-[11px] text-slate-400 self-center">+${salon.services.length - 3} more</span>` : ''}
+              ${(salon.services || []).slice(0, 3).map(s => `<span class="text-[11px] bg-slate-100 text-slate-700 px-2 py-1 rounded-md font-medium">${s.name} • ₹${s.price}</span>`).join('')}
+              ${(salon.services || []).length > 3 ? `<span class="text-[11px] text-slate-400 self-center">+${salon.services.length - 3} more</span>` : ''}
             </div>
           </div>
           <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs text-slate-500">Starts at <strong class="text-slate-900 font-bold">₹${Math.min(...salon.services.map(s => s.price))}</strong></span>
+            <span class="text-xs text-slate-500">Starts at <strong class="text-slate-900 font-bold">₹${minPrice}</strong></span>
             <button onclick="openSalonDetails('${salon.id}')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm">
               View Slots & Book
             </button>
@@ -482,17 +889,10 @@
         grid.appendChild(card);
       });
     }
-
-    function resetFilters() {
-      document.getElementById("filter-city").value = "";
-      document.getElementById("filter-service").value = "";
-      document.getElementById("search-query").value = "";
-      filterSalons();
-    }
-
     // --- OPEN SALON DETAILS ---
-    function openSalonDetails(salonId) {
-      currentSalon = SALONS.find(s => s.id === salonId);
+    async function openSalonDetails(salonId) {
+      const allSalons = await fetchAllApprovedSalons();
+      currentSalon = allSalons.find(s => s.id === salonId) || SALONS.find(s => s.id === salonId);
       if (!currentSalon) return;
 
       selectedServices = [];
@@ -500,17 +900,19 @@
 
       document.getElementById("detail-name").innerText = currentSalon.name;
       document.getElementById("detail-location").querySelector("span").innerText = `${currentSalon.address}, ${currentSalon.city}`;
-      document.getElementById("detail-rating").querySelector("span").innerText = currentSalon.rating;
-      document.getElementById("detail-reviews").innerText = `${currentSalon.reviewsCount} customer reviews`;
-      document.getElementById("detail-about").innerText = currentSalon.about;
+      document.getElementById("detail-rating").querySelector("span").innerText = currentSalon.rating || 4.8;
+      document.getElementById("detail-reviews").innerText = `${currentSalon.reviewsCount || 0} customer reviews`;
+      document.getElementById("detail-about").innerText = currentSalon.about || '';
 
       // Populate stylists
       const stylistSelect = document.getElementById("book-stylist");
-      stylistSelect.innerHTML = currentSalon.stylists.map(st => `<option value="${st}">${st}</option>`).join('');
+      const stylistList = currentSalon.stylists && currentSalon.stylists.length > 0 ? currentSalon.stylists : ["Any Available Stylist"];
+      stylistSelect.innerHTML = stylistList.map(st => `<option value="${st}">${st}</option>`).join('');
 
       // Populate services list
       const servicesList = document.getElementById("services-list");
-      servicesList.innerHTML = currentSalon.services.map(s => `
+      const srvList = currentSalon.services || [];
+      servicesList.innerHTML = srvList.map(s => `
         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-rose-400 bg-white cursor-pointer transition select-none">
           <div class="flex items-center gap-3">
             <input type="checkbox" onchange="toggleService('${s.id}')" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500">
