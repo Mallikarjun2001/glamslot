@@ -1190,11 +1190,12 @@
       grid.innerHTML = "";
 
       TIME_SLOTS.forEach(time => {
-        // Check if slot is already booked for this salon on this date across ALL devices
+        // Check if slot is actively booked (and NOT cancelled) across ALL devices
         const isBooked = bookings.some(b => 
           (b.salon_id === currentSalon.id || b.salonId === currentSalon.id) && 
           b.date === dateVal && 
-          b.time === time
+          b.time === time &&
+          b.status !== 'CANCELLED'
         );
 
         const btn = document.createElement("button");
@@ -1363,7 +1364,20 @@
 
       try {
         if (supabaseClient) {
-          await supabaseClient.from('bookings').delete().eq('id', bookingId);
+          // Delete from cloud so slot becomes immediately free for everyone
+          const { error } = await supabaseClient
+            .from('bookings')
+            .delete()
+            .eq('id', bookingId);
+
+          if (error) {
+            console.error("Cloud cancellation failed, updating status:", error);
+            // Fallback: update status to CANCELLED
+            await supabaseClient
+              .from('bookings')
+              .update({ status: 'CANCELLED' })
+              .eq('id', bookingId);
+          }
         }
       } catch (e) {
         console.error("Failed to delete from Supabase", e);
@@ -1374,7 +1388,7 @@
       localStorage.setItem("my_glamslot_bookings", JSON.stringify(bookings));
       updateBookingsBadge();
       renderMyBookings();
-      showToast("Booking cancelled.", "info");
+      showToast("Booking cancelled. Slot is now available again!", "info");
     }
 
     function renderMyBookings() {
