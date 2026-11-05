@@ -371,40 +371,55 @@
 
     async function renderAdminView() {
       const tbody = document.getElementById("admin-table-body");
-      tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Loading bookings...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Loading live cloud bookings from Supabase...</td></tr>`;
       
       const bookings = await fetchAllBookings();
       if (!bookings || bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-medium">No bookings placed yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-medium">No bookings in Supabase database yet.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = bookings.map(b => `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="py-3 px-4 font-mono font-bold text-slate-800">${b.id}</td>
-          <td class="py-3 px-4">
-            <span class="font-bold text-slate-900 block">${b.customerName}</span>
-            <span class="text-slate-400 font-mono text-[11px]">${b.customerPhone}</span>
-          </td>
-          <td class="py-3 px-4">
-            <span class="font-semibold text-slate-800 block">${b.salonName}</span>
-            <span class="text-slate-500 text-[11px]">Stylist: ${b.stylist}</span>
-          </td>
-          <td class="py-3 px-4 whitespace-nowrap">
-            <span class="font-bold text-slate-800 block">${b.date}</span>
-            <span class="text-rose-600 font-semibold text-[11px]">${b.time}</span>
-          </td>
-          <td class="py-3 px-4">
-            <span class="text-slate-700">${b.services.map(s => s.name).join(", ")}</span>
-          </td>
-          <td class="py-3 px-4 font-bold text-slate-900">₹${b.totalAmount}</td>
-          <td class="py-3 px-4">
-            <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px]">
-              ${b.status}
-            </span>
-          </td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = bookings.map(b => {
+        const id = b.id || "-";
+        const customerName = b.customer_name || b.customerName || "N/A";
+        const customerPhone = b.customer_phone || b.customerPhone || "N/A";
+        const salonName = b.salon_name || b.salonName || "N/A";
+        const stylist = b.stylist || "Any Available";
+        const date = b.date || "-";
+        const time = b.time || "-";
+        const total = b.total_amount || b.totalAmount || 0;
+        const status = b.status || "CONFIRMED";
+        const servicesList = Array.isArray(b.services) 
+          ? b.services.map(s => typeof s === 'object' ? s.name : s).join(", ") 
+          : "Standard Service";
+
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3.5 px-4 font-mono font-bold text-slate-800">${id}</td>
+            <td class="py-3.5 px-4">
+              <span class="font-bold text-slate-900 block">${customerName}</span>
+              <span class="text-slate-500 font-mono text-[11px]">${customerPhone}</span>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="font-semibold text-slate-800 block">${salonName}</span>
+              <span class="text-slate-500 text-[11px]">Stylist: ${stylist}</span>
+            </td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <span class="font-bold text-slate-800 block">${date}</span>
+              <span class="text-rose-600 font-semibold text-[11px]">${time}</span>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="text-slate-700">${servicesList}</span>
+            </td>
+            <td class="py-3.5 px-4 font-bold text-slate-900 text-sm">₹${total}</td>
+            <td class="py-3.5 px-4">
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md font-bold text-[10px]">
+                ${status}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
 
     // --- RENDER SALONS ---
@@ -614,7 +629,8 @@
       const conflict = latestBookings.some(b => 
         (b.salon_id === currentSalon.id || b.salonId === currentSalon.id) && 
         b.date === bookingDate && 
-        b.time === selectedSlot
+        b.time === selectedSlot &&
+        (b.status === 'CONFIRMED' || !b.status)
       );
 
       if (conflict) {
@@ -623,8 +639,11 @@
         return;
       }
 
+      // Unique deterministic lock key so Supabase database enforces single booking per slot
+      const slotLockId = `SLOT-${currentSalon.id}-${bookingDate}-${selectedSlot.replace(/[^a-zA-Z0-9]/g, '')}`;
+
       const bookingRecord = {
-        id: "BK-" + Math.floor(100000 + Math.random() * 900000),
+        id: slotLockId,
         salon_id: currentSalon.id,
         salon_name: currentSalon.name,
         salon_address: currentSalon.address,
@@ -641,11 +660,18 @@
       try {
         if (!supabaseClient) throw new Error("Supabase client not loaded");
 
+        // Single atomic insert into database: if another user books at the exact same millisecond,
+        // PostgreSQL unique primary key constraint blocks the second user instantly!
         const { error } = await supabaseClient
           .from('bookings')
           .insert([bookingRecord]);
 
         if (error) {
+          if (error.code === '23505' || (error.message && error.message.includes('duplicate'))) {
+            showToast("Oops! Someone clicked this slot just before you. Please select another slot.", "error");
+            renderSlots();
+            return;
+          }
           console.error("Supabase insert error:", error);
           throw error;
         }
